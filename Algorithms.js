@@ -27,7 +27,37 @@ function rayIntersectPolygon(P0, V, vertices, mvMatrix) {
 }
 
 
+function sceneGraphTraversal(node, mvMatrix){
+	//TODO: complete the recursive scene graph traversal
+	for c in node.children:// for each child in node.children:
+  		if (mesh in node){ // check if node is dummy: if not dummy node, it will have a mesh object
+  			var mesh = node.mesh; // access the mesh object
+  			for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
+  				var face = mesh.faces[f]; // pointer to face
+       				var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
+       				// Note: 'vertices' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
+       				// Convert vertices from NCS to WCS: 
+       				var nextmvMatrix = mat4.create(); //Allocate transformation matrix
+       				mat4.mul(nextmvMatrix, mvMatrix, c.transform); //Calculate transformation matrix based on hierarchy
+       				var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
+       				for vertex in vertices: 
+       					var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
+       					vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
+				// TODO: Create the virtual source (mirror image) across each face (plane)
+					// Use vertices to find a point 'q' on the plane
+					// Create a vector from the source to this point (vec=source-q)
+					// calculate plane normal using transformed vertices
+					// The mirror image of s, snew =  s - 2((s-q)*n)*n
+					// add snew to scene.imsources[]
+					// remember to create a few object fields: pos, order, rcoeff, parent, genface
+  					// Note: Reflect images across faces in WORLD COORDINATES
+  				}
+  			}
+  		//TODO: recursive call on child 
+  		sceneGraphTraversal(c, mat4,mul(mvMatrix,node.transform));
 
+
+}
 
 
 function addImageSourcesFunctions(scene) {
@@ -103,50 +133,21 @@ function addImageSourcesFunctions(scene) {
 		scene.source.order = 0; //how many bounces a particular image represents
 		scene.source.rcoeff = 1.0; //reflection coefficient of the node that gave rise to this source
 		scene.source.parent = null; //image source's parent
-		scene.source.genFace = null; //mesh face that generated image (don't reflect an image across this face- you'll get parent image)
-	
+		scene.source.genFace = null; //mesh face that generated image (don't reflect an image across this face- you'll get parent image
 		scene.imsources = [scene.source];
 
 		for (var o = 1; o<=order; o++){
 			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
 				if (scene.imsources[s].order === (o-1)){ //reflect image sources with 1 order less than the current order
 					//TODO: reflect this image source by calling recursive scene tree function
+					// Start off recursion by calling it with scene and the identity matrix
+					sceneGraphTraversal (scene, mat4.create());
 					//TODO: generate images of 'snew'
-					snew.parent=s;
+					//TODO: snew.parent=s;
 					//TODO: snew.genFace = "face reflected";
 				}
 			}
 		}
-
-		//TODO: complete the recursive scene graph traversal
-		// Start off recursion by calling it with scene and the identity matrix: func(scene, mat4.create())
-  		// for each node in the scene graph?
-  		
-  			for c in node.children:// for each child in node.children:
-  				if (mesh in node){ // check if node is dummy: if not dummy node, it will have a mesh object
-  					var mesh = node.mesh; // access the mesh object
-  					for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
-  						var face = mesh.faces[f]; // pointer to face
-       						var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
-       						// Note: 'vertices' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
-       						// Convert vertices from NCS to WCS: 
-       						var nextmvMatrix = mat4.create(); //Allocate transformation matrix
-       						mat4.mul(nextmvMatrix, mvMatrix, c.transform); //Calculate transformation matrix based on hierarchy
-       						var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
-       						for vertex in vertices: 
-       							var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
-       							vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
-						// TODO: Create the virtual source (mirror image) across each face (plane)
-							// Use vertices to find a point 'q' on the plane
-							// Create a vector from the source to this point (vec=source-q)
-							// calculate plane normal using transformed vertices
-							// The mirror image of s, snew =  s - 2((s-q)*n)*n
-							// add snew to scene.imsources[]
-							// remember to create a few object fields: pos, order, rcoeff, parent, genface
-  							// Note: Reflect images across faces in WORLD COORDINATES
-  					}
-  				}
-  				//TODO: recursive call on child -- f(c, mat4,mul(mvMatrix,node.transform));--- ???
 
 
 		//FOR DEBUGGING PURPOSES
@@ -157,8 +158,8 @@ function addImageSourcesFunctions(scene) {
 		}
 		
 	}    
-    
-    
+	
+
 
 
 
