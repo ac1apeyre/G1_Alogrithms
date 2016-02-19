@@ -231,89 +231,21 @@ function addImageSourcesFunctions(scene) {
         
 		scene.source.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that
  gave rise to this source
-        
 		scene.source.parent = null; //Keep track of the image source's parent
-        
 		scene.source.genFace = null; //Keep track of the mesh face that generated this image
-        
-		
-		//Remember not to reflect an image across the face that just generated it or you'll get its parent image  
-		//This information can also be used later
- when tracing back paths
-        
-
 		scene.imsources = [scene.source];
         
         
-
-		//TODO: Fill the rest of this in.  Be sure to reflect images across faces
- in world coordinates, not the 
-		//faces in the original mesh coordinates
-. See the "rayIntersectFaces" function above for an example of 
-		//how to loop
- through faces in a mesh
-  
-
-
-		//*Elegant way to extract specular paths from source to receiver: mirror images/image sources
-		//*First create a virtual source which is the mirror image of a source across a plane
-		//*To create a mirror image, take a point p on the plane and create a vector
-		//*from the source s to p: v_ps = s-p
-		// s' (mirror image) = s - (2(s-p)*n)*n
-		// where n is the normalized plane normal
-		// add the mirror source object to scene.imsources[]-- scene.imsources.push(s'); ???
-			//scene.s'.pos = .... // include a field pos describing its position in world coordinates
-			//scene.s'.order = 0; //Store an order field to figure out how many bounces a particular image represents
-        
-			//scene.s'.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that
- gave rise to this source
-        
-			//scene.s'.parent = ... //Pointer from the image source to its parent      
-			//scene.s'.genFace = null; //Keep track of the mesh face that generated this image
-    
-	
-
-		// every node that isn't a dummy node has a mesh object field
-		// every mesh object has an array of faces 
-		// every object in faces has a function getVerticesPos() that returns an array of vec3 objects
-			// describing the location of that face's certices in the node's coordinate system
-
-		// CODE BELOW: loops through all of the FACES of the MESH associated with a particular NODE in
-	 
-       // in the SCENE GRAPH and GETTING ALL THE VERTICES FOR EACH FACE
-		
-			var mesh = node.mesh;
-			for (var face = 0; face < mesh.faces.length; face++){
-				var vertices = mesh.faces[face].getVerticesPos();		
-				// do stuff with vertices here
-
-		// TO COMPUTE THE NORMAL OF A FACE: use function face.getNormal() to get the normal
-		// in the node's cooredinate system -- need to transform the normal into WC with 
-		// a normal matrix (may need to use mat3.normalFromMat4()) OR transform all point into WC
-		// then compute the normal from scratch the ordinary way 
-
-
-
-		// for orders >1-- have an outer loop that loops through each order starting at 1 up
-		// to the maximum order and check all of the previous image sources in scene.imsources
-		// only reflecting those with an order one less than the current order
-
-			for (var o = 1; o<=order; o++){
-				for (var i=0; i<scene.imsources.length; i++){
-					if (scene.imsources[i].order === (o-1)){
-						//reflect this image source
-					}
-				}
-			}
-
-
-		// display all image sources to the console-- 
+        	//TODO: Fill the rest of this in
+        	
+        	
+        	//FOR DEBUGGING PURPOSES
+		//Display all image sources to the console
 		//# virtual images: N(N-1)^(r-1) where N = number of faces in a scene and r is the order 
-			
-			for (var a = 0; a < scene.imsources.length; a++) {
-    				console.log(scene.imsources[a]);
-			}
-		
+		for (var a = 0; a < scene.imsources.length; a++) {
+    			console.log(scene.imsources[a].pos);
+		}
+
 	}    
     
     
