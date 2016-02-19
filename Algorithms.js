@@ -200,37 +200,15 @@ function addImageSourcesFunctions(scene) {
 	}
  
 
-   
-    
 
-	//Purpose: Fill in the array scene.imsources[] with a bunch of source
-    
-	//objects.  It's up to you what you put in the source objects, but at
-    
-	//the very least each object needs a field "pos" describing its position
-    
-	//in world coordinates so that the renderer knows where to draw it
-    
-	//You will certainly also need to save along pointers from an image source
-    
-	//to its parent so that when you trace paths back you know where to aim
-    
-	//Recursion is highly recommended here, since you'll be making images of 
-    
-	//images of images (etc...) reflecting across polygon faces.
-    
-
+	//Purpose: Fill in the array scene.imsources[] with a bunch of source objects
     
 	//Inputs: order (int) : The maximum number of bounces to take
     
-
 	//**IMAGE SOURCE GENERATION**
 	scene.computeImageSources = function(order) {
-        
 		scene.source.order = 0; //Store an order field to figure out how many bounces a particular image represents
-        
-		scene.source.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that
- gave rise to this source
+		scene.source.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that gave rise to this source
 		scene.source.parent = null; //Keep track of the image source's parent
 		scene.source.genFace = null; //Keep track of the mesh face that generated this image
 		scene.imsources = [scene.source];
