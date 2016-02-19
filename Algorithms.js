@@ -108,10 +108,8 @@ function addImageSourcesFunctions(scene) {
 		scene.imsources = [scene.source];
 
 		for (var o = 1; o<=order; o++){
-			//check all previous image sources in scene.imsources
-			for (var s=0; s<scene.imsources.length; s++){
-				//only reflect image sources with an order less than the current order
-				if (scene.imsources[s].order === (o-1)){
+			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
+				if (scene.imsources[s].order === (o-1)){ //reflect image sources with 1 order less than the current order
 					//TODO: reflect this image source by calling recursive scene tree function
 					//TODO: generate images of 'snew'
 					snew.parent=s;
@@ -154,7 +152,7 @@ function addImageSourcesFunctions(scene) {
 		//Display all image sources to the console
 		//# virtual images: N(N-1)^(r-1) where N = number of faces in a scene and r is the order 
 		for (var a = 0; a < scene.imsources.length; a++) {
-    			console.log(scene.imsources[a]);
+    			console.log(scene.imsources[a].pos);
 		}
 		
 	}    
