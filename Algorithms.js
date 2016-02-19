@@ -4,10 +4,8 @@
 
 
 
-//Given a ray described by an initial point P0 and a direction V both in
- world coordinates, 
-//check to see 
-if it intersects the polygon described by "vertices," an array of vec3
+//Given a ray described by an initial point P0 and a direction V both in world coordinates, 
+//check to see if it intersects the polygon described by "vertices," an array of vec3
 
 //values describing the location of the polygon vertices in its child frame.
 
@@ -29,8 +27,7 @@ function rayIntersectPolygon(P0, V, vertices, mvMatrix) {
     
     
 
-	//Step 1: Make a new array of vec3s which holds "vertices" transformed 
-to world 
+	//Step 1: Make a new array of vec3s which holds "vertices" transformed to world 
 	//coordinates (hint: vec3 has a function "transformMat4" which is useful)
 
 
@@ -46,12 +43,9 @@ to world
     
     
 	//Step 4: Check to see if the intersection point is inside of the transformed 
-	//polygon
-. You can assume that the polygon is convex.  If you use the area test, 
-	//you can
- allow for some wiggle room in the two areas you're comparing (e.g. 
-	//absolute difference
- not exceeding 1e-4)
+	//polygon. You can assume that the polygon is convex.  If you use the area test, 
+	//you can allow for some wiggle room in the two areas you're comparing (e.g. 
+	//absolute difference not exceeding 1e-4)
    
  
     
@@ -65,9 +59,7 @@ to world
 
 	return {t:1e9, P:vec3.fromValues(0, 0, 0)}; //These are dummy values 
 	//you should return both an intersection point and a parameter t.  The parameter t 
-	//will be used to sort
- intersections in order of occurrence to figure out which 
-	//one happened first
+	//will be used to sort intersections in order of occurrence to figure out which one happened first
 
 }
 
@@ -76,243 +68,125 @@ to world
 
 
 function addImageSourcesFunctions(scene) {
-    
-	//Setup all of the functions that students fill in that operate directly
- 
-	//on the scene
-    
-    
-
-
 	//Purpose: A recursive function provided which helps to compute intersections
-	//of rays
- with all faces in the scene, taking into consideration the scene graph
+	//of rays with all faces in the scene, taking into consideration the scene graph
 	//structure
-   
 
 	//Inputs: P0 (vec3): Ray starting point, V (vec3): ray direction
-    
 	//node (object): node in scene tree to process, 
-    
 	//mvMatrix (mat4): Matrix to put geometry in this node into world coordinates
-    
 	//excludeFace: Pointer to face object to be excluded (don't intersect with
-    
 	//the face that this point lies on)
-    
 	//Returns: null if no intersection,
-    
 	//{tmin:minimum t along ray, PMin(vec3): corresponding point, faceMin:Pointer to mesh face hit first}
     
-    
 	//NOTE: Calling this function with node = scene and an identity matrix for mvMatrix
-    
 	//will start the recursion at the top of the scene tree in world coordinates
-    
 	
 	//**PROVIDED** (may need to alter if doing transmission task later)
 	scene.rayIntersectFaces = function(P0, V, node, mvMatrix, excludeFace) {
-	
-	var tmin = Infinity; //The parameter along the ray of the nearest intersection
-        
+		var tmin = Infinity; //The parameter along the ray of the nearest intersection
 		var PMin = null; //The point of intersection corresponding to the nearest interesection
-        
 		var faceMin = null;//The face object corresponding to the nearest intersection
-        
 		if (node === null) {
-            
 			return null;
-        
 		}
-        
 		if ('mesh' in node) { //Make sure it's not just a dummy transformation node
-            
 			var mesh = node.mesh;
-            
 			for (var f = 0; f < mesh.faces.length; f++) {
-                
 				if (mesh.faces[f] == excludeFace) {
-                    
 				continue; //Don't re-intersect with the face this point lies on
-                
 				}
-                
 				//Intersect the ray with this polygon
-                
 				var res = rayIntersectPolygon(P0, V, mesh.faces[f].getVerticesPos(), mvMatrix);
-                
 				if (!(res === null) && (res.t < tmin)) {
-                    
 					tmin = res.t;
-                    
 					PMin = res.P;
-                    
 					faceMin = mesh.faces[f];
-                
 				}
-            
 			}
-        
 		}
-        
-        
 		if ('children' in node) {
-            
-		//Recursively check the meshes of the children to make sure the ray
-            
-		//doesn't intersect any of them first
-            
+		//Recursively check the meshes of the children to make sure the ray doesn't intersect any of them first
 			for (var i = 0; i < node.children.length; i++) {
-                
 				var nextmvMatrix = mat4.create();
-                
-				//Multiply on the right by the next transformation of the child
- node
-                
+				//Multiply on the right by the next transformation of the child node
 				mat4.mul(nextmvMatrix, mvMatrix, node.children[i].transform);
-                
 				//Recursively intersect with the child node
-                
 				var cres = scene.rayIntersectFaces(P0, V, node.children[i], nextmvMatrix, excludeFace);
-                
 				if (!(cres === null) && (cres.tmin < tmin)) {
-                    
 					tmin = cres.tmin;
-                    
 					PMin = cres.PMin;
-                    
 					faceMin = cres.faceMin;
-                
 				}
-            
 			}
-        
 		}
-        
 		if (PMin === null) {
-            
 			return null;
-        
 		}
-        
 		return {tmin:tmin, PMin:PMin, faceMin:faceMin};
-    
 	}
  
 
-   
-    
 
-	//Purpose: Fill in the array scene.imsources[] with a bunch of source
-    
-	//objects.  It's up to you what you put in the source objects, but at
-    
-	//the very least each object needs a field "pos" describing its position
-    
-	//in world coordinates so that the renderer knows where to draw it
-    
-	//You will certainly also need to save along pointers from an image source
-    
-	//to its parent so that when you trace paths back you know where to aim
-    
-	//Recursion is highly recommended here, since you'll be making images of 
-    
-	//images of images (etc...) reflecting across polygon faces.
-    
+	//IMAGE SOURCE GENERATION
+	//Purpose: Fill in the array scene.imsources[] with a bunch of source objects. 
+	//Inputs: order (int) : maximum number of bounces to take
+	//Notes: 
+	//source objects need "pos", "genFace", "rcoeff", "order", & "parent" fields (at least)
+    	//use recursion (reflecting images of images of images (etc.) across polygon faces)
 
-    
-	//Inputs: order (int) : The maximum number of bounces to take
-    
-
-	//**IMAGE SOURCE GENERATION**
 	scene.computeImageSources = function(order) {
-        
-		scene.source.order = 0; //Store an order field to figure out how many bounces a particular image represents
-        
-		scene.source.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that
- gave rise to this source
-        
-		scene.source.parent = null; //Keep track of the image source's parent
-        
-		scene.source.genFace = null; //Keep track of the mesh face that generated this image
-        
-		
-		//Remember not to reflect an image across the face that just generated it or you'll get its parent image  
-		//This information can also be used later
- when tracing back paths
-        
-
-		scene.imsources = [scene.source];
-        
-        
-
-		//TODO: Fill the rest of this in.  Be sure to reflect images across faces
- in world coordinates, not the 
-		//faces in the original mesh coordinates
-. See the "rayIntersectFaces" function above for an example of 
-		//how to loop
- through faces in a mesh
-  
-
-
-		//*Elegant way to extract specular paths from source to receiver: mirror images/image sources
-		//*First create a virtual source which is the mirror image of a source across a plane
-		//*To create a mirror image, take a point p on the plane and create a vector
-		//*from the source s to p: v_ps = s-p
-		// s' (mirror image) = s - (2(s-p)*n)*n
-		// where n is the normalized plane normal
-		// add the mirror source object to scene.imsources[]-- scene.imsources.push(s'); ???
-			//scene.s'.pos = .... // include a field pos describing its position in world coordinates
-			//scene.s'.order = 0; //Store an order field to figure out how many bounces a particular image represents
-        
-			//scene.s'.rcoeff = 1.0; //Keep track of the reflection coefficient of the node that
- gave rise to this source
-        
-			//scene.s'.parent = ... //Pointer from the image source to its parent      
-			//scene.s'.genFace = null; //Keep track of the mesh face that generated this image
-    
+		scene.source.order = 0; //how many bounces a particular image represents
+		scene.source.rcoeff = 1.0; //reflection coefficient of the node that gave rise to this source
+		scene.source.parent = null; //image source's parent
+		scene.source.genFace = null; //mesh face that generated image (don't reflect an image across this face- you'll get parent image)
 	
+		scene.imsources = [scene.source];
 
-		// every node that isn't a dummy node has a mesh object field
-		// every mesh object has an array of faces 
-		// every object in faces has a function getVerticesPos() that returns an array of vec3 objects
-			// describing the location of that face's certices in the node's coordinate system
-
-		// CODE BELOW: loops through all of the FACES of the MESH associated with a particular NODE in
-	 
-       // in the SCENE GRAPH and GETTING ALL THE VERTICES FOR EACH FACE
-		
-			var mesh = node.mesh;
-			for (var face = 0; face < mesh.faces.length; face++){
-				var vertices = mesh.faces[face].getVerticesPos();		
-				// do stuff with vertices here
-
-		// TO COMPUTE THE NORMAL OF A FACE: use function face.getNormal() to get the normal
-		// in the node's cooredinate system -- need to transform the normal into WC with 
-		// a normal matrix (may need to use mat3.normalFromMat4()) OR transform all point into WC
-		// then compute the normal from scratch the ordinary way 
-
-
-
-		// for orders >1-- have an outer loop that loops through each order starting at 1 up
-		// to the maximum order and check all of the previous image sources in scene.imsources
-		// only reflecting those with an order one less than the current order
-
-			for (var o = 1; o<=order; o++){
-				for (var i=0; i<scene.imsources.length; i++){
-					if (scene.imsources[i].order === (o-1)){
-						//reflect this image source
+		for (var o = 1; o<=order; o++){
+			//check all previous image sources in scene.imsources
+			for (var s=0; s<scene.imsources.length; s++){
+					//only reflect image sources with an order less than the current order
+					if (scene.imsources[s].order === (o-1)){
+						//TODO: reflect this image source by calling recursive scene tree function
+						//TODO: generate images of 'snew'
+						snew.parent=s;
+						//TODO: snew.genFace = "face reflected";
 					}
 				}
-			}
+		}
+
+		//TODO: complete the recursive scene graph traversal
+		// Start off recursion by calling it with scene and the identity matrix: func(scene, mat4.create())
+  		// for each node in the scene graph--- f(node, mvMatrix): --- ??
+  			for c in node.children:// for each child in node.children:
+  				if (mesh in node){ // check if node is dummy: if not dummy node, it will have a mesh object
+  					var mesh = node.mesh; // access the mesh object
+  					for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
+  						var face = mesh.faces[f]; // pointer to face
+       						var v = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
+       						// Note: 'v' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
+       						// TODO: convert vertices from NCS to WCS
+						// TODO: Create the virtual source (mirror image) across each face (plane)
+							// Use vertices to find a point 'q' on the plane
+							// Create a vector from the source to this point (vec=source-q)
+							// calculate plane normal
+							// The mirror image of s, snew =  s - 2((s-q)*n)*n
+							// add snew to scene.imsources[]
+							// remember to create a few object fields: pos, order, rcoeff, parent, genface
+  							// Note: Reflect images across faces in WORLD COORDINATES
+  					}
+  				}
+  				//TODO: recursive call on child -- f(c, mat4,mul(mvMatrix,node.transform));--- ???
 
 
-		// display all image sources to the console-- 
+		//FOR DEBUGGING PURPOSES
+		//Display all image sources to the console
 		//# virtual images: N(N-1)^(r-1) where N = number of faces in a scene and r is the order 
-			
-			for (var a = 0; a < scene.imsources.length; a++) {
-    				console.log(scene.imsources[a]);
-			}
+		for (var a = 0; a < scene.imsources.length; a++) {
+    			console.log(scene.imsources[a]);
+		}
 		
 	}    
     
