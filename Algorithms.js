@@ -48,9 +48,7 @@ function sceneGraphTraversal(node, mvMatrix){
 					// Create a vector from the source to this point (vec=source-q)
 					// calculate plane normal using transformed vertices
 					// The mirror image of s, snew =  s - 2((s-q)*n)*n
-					// add snew to scene.imsources[]
-					// remember to create a few object fields: pos, order, rcoeff, parent, genface
-  					// Note: Reflect images across faces in WORLD COORDINATES
+					// add snew to scene.imsources[]--> var snew = {pos:p, order:2, parent:image, genFace:f, rcoeff:r};
   				}
   			}
   		//TODO: recursive call on child 
@@ -140,11 +138,9 @@ function addImageSourcesFunctions(scene) {
 			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
 				if (scene.imsources[s].order === (o-1)){ //reflect image sources with 1 order less than the current order
 					//TODO: reflect this image source by calling recursive scene tree function
-					// Start off recursion by calling it with scene and the identity matrix
-					sceneGraphTraversal (scene, mat4.create());
-					//TODO: generate images of 'snew'
-					//TODO: snew.parent=s;
-					//TODO: snew.genFace = "face reflected";
+					var mirror_images = []; // create an array to hold mirror images of the source
+					mirror_images = sceneGraphTraversal (scene, mat4.create()); // Start off recursion by calling it with scene and the identity matrix
+					scene.imsources.push(mirror_images); // add image sources from that source to the master array of immage sources
 				}
 			}
 		}
