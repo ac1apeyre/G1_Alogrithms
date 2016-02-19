@@ -137,10 +137,12 @@ function addImageSourcesFunctions(scene) {
 		for (var o = 1; o<=order; o++){
 			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
 				if (scene.imsources[s].order === (o-1)){ //reflect image sources with 1 order less than the current order
-					//TODO: reflect this image source by calling recursive scene tree function
-					var mirror_images = []; // create an array to hold mirror images of the source
-					mirror_images = sceneGraphTraversal (scene, mat4.create()); // Start off recursion by calling it with scene and the identity matrix
-					scene.imsources.push(mirror_images); // add image sources from that source to the master array of immage sources
+					//reflect image by calling recursive scene tree function
+					var mirror_images = []; //Create an array to hold mirror images of the source
+					mirror_images = sceneGraphTraversal (scene, mat4.create()); //Start off recursion with scene and identity matrix
+					for (var m = 0; m<mirror_images.length; m++){ //Add image sources for that order to the master array of image sources
+						scene.imsources.push(mirror_images[m]);
+					}
 				}
 			}
 		}
