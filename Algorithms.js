@@ -110,35 +110,37 @@ function addImageSourcesFunctions(scene) {
 		for (var o = 1; o<=order; o++){
 			//check all previous image sources in scene.imsources
 			for (var s=0; s<scene.imsources.length; s++){
-					//only reflect image sources with an order less than the current order
-					if (scene.imsources[s].order === (o-1)){
-						//TODO: reflect this image source by calling recursive scene tree function
-						//TODO: generate images of 'snew'
-						snew.parent=s;
-						//TODO: snew.genFace = "face reflected";
-					}
+				//only reflect image sources with an order less than the current order
+				if (scene.imsources[s].order === (o-1)){
+					//TODO: reflect this image source by calling recursive scene tree function
+					//TODO: generate images of 'snew'
+					snew.parent=s;
+					//TODO: snew.genFace = "face reflected";
 				}
+			}
 		}
 
 		//TODO: complete the recursive scene graph traversal
 		// Start off recursion by calling it with scene and the identity matrix: func(scene, mat4.create())
-  		// for each node in the scene graph--- f(node, mvMatrix): --- ??
+  		// for each node in the scene graph
   			for c in node.children:// for each child in node.children:
   				if (mesh in node){ // check if node is dummy: if not dummy node, it will have a mesh object
   					var mesh = node.mesh; // access the mesh object
   					for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
   						var face = mesh.faces[f]; // pointer to face
-       						var v = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
-       						// Note: 'v' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
-       						// TODO: convert vertices from NCS to WCS: Make a new array of vec3s-- use "transformMat4"
-       						
-       						
-       						
-       						
+       						var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
+       						// Note: 'vertices' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
+       						// Convert vertices from NCS to WCS: 
+       						var nextmvMatrix = mat4.create(); //Allocate transformation matrix
+       						mat4.mul(nextmvMatrix, mvMatrix, c.transform); //Calculate transformation matrix based on hierarchy
+       						var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
+       						for vertex in vertices: 
+       							var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
+       							vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
 						// TODO: Create the virtual source (mirror image) across each face (plane)
 							// Use vertices to find a point 'q' on the plane
 							// Create a vector from the source to this point (vec=source-q)
-							// calculate plane normal
+							// calculate plane normal using transformed vertices
 							// The mirror image of s, snew =  s - 2((s-q)*n)*n
 							// add snew to scene.imsources[]
 							// remember to create a few object fields: pos, order, rcoeff, parent, genface
