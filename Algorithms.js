@@ -27,33 +27,49 @@ function rayIntersectPolygon(P0, V, vertices, mvMatrix) {
 }
 
 
-function sceneGraphTraversal(node, mvMatrix){
-	//TODO: complete the recursive scene graph traversal
-	for c in node.children:// for each child in node.children:
-  		if (mesh in node){ // check if node is dummy: if not dummy node, it will have a mesh object
+function sceneGraphTraversal(s, node, mvMatrix){ //complete the recursive scene graph traversal
+	for (c in node.children){ //for each child in node.children
+  		if ('mesh' in node){ // check if node is dummy: if not dummy node, it will have a mesh object
   			var mesh = node.mesh; // access the mesh object
   			for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
   				var face = mesh.faces[f]; // pointer to face
+       				if (face == s.genFace) { //if face is the face that generated the source
+          				continue; //Don't reflect with the face (you'll get parent image)
+        			}
        				var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
        				// Note: 'vertices' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
        				// Convert vertices from NCS to WCS: 
        				var nextmvMatrix = mat4.create(); //Allocate transformation matrix
        				mat4.mul(nextmvMatrix, mvMatrix, c.transform); //Calculate transformation matrix based on hierarchy
        				var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
-       				for vertex in vertices: 
-       					var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
-       					vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
-				// TODO: Create the virtual source (mirror image) across each face (plane)
-					// Use vertices to find a point 'q' on the plane
-					// Create a vector from the source to this point (vec=source-q)
-					// calculate plane normal using transformed vertices
-					// The mirror image of s, snew =  s - 2((s-q)*n)*n
-					// add snew to scene.imsources[]--> var snew = {pos:p, order:2, parent:image, genFace:f, rcoeff:r};
-  				}
+       				for (vertex in vertices){
+          				var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
+          				vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
+          				wc_vertices.push(wc_vertex);
+        			};
+				//Create the mirror image across each face (plane):
+				var q = vec3.create();// create a point 'q' on the plane
+				q = wc_vertices[0]; //arbitrarily let 'q' be vertex 0
+				var source = vec3.create();
+				source = s.pos; 
+				var vecSQ = vec3.create(); //Create a vector from the source to q 
+				vec3.subtract(vecSQ, q, source); //calculate vecSQ=source-q
+				//calculate plane normal using transformed vertices:
+				var u1 = vec3.create(); //allocate a vector "u1" (vertex 1 to vertex 2)
+        			var u2 = vec3.create(); //allocate a vector "u2" (vertex 1 to vertex 3)
+        			vec3.subtract(u1, wc_vertex[1], wc_vertex[0]); //calculate the vector
+        			vec3.subtract(u2, wc_vertex[2], wc_vertex[0]); //calculate the vector
+        			var norm = vec3.create(); //allocate a vector for the plane normal
+        			vec3.cross(norm, u1, u2); //calculate plane normal using cross product
+        			var p = vec3.create();
+        			p = source - 2*((source-q)*norm)*norm; //The mirror image of s, snew =  s - 2((s-q)*n)*n
+        			var snew = {pos:p, order:(s.order+1), parent:s, genFace:face, rcoeff:s.rcoeff};
+				// add snew to scene.imsources[]
+				scene.imsources.push(snew);
   			}
-  		//TODO: recursive call on child 
-  		sceneGraphTraversal(c, mat4,mul(mvMatrix,node.transform));
-
+  		}
+  		sceneGraphTraversal(s, c, nextmvMatrix); // recursive call on child
+	}
 
 }
 
@@ -138,11 +154,7 @@ function addImageSourcesFunctions(scene) {
 			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
 				if (scene.imsources[s].order === (o-1)){ //reflect image sources with 1 order less than the current order
 					//reflect image by calling recursive scene tree function
-					var mirror_images = []; //Create an array to hold mirror images of the source
-					mirror_images = sceneGraphTraversal (scene, mat4.create()); //Start off recursion with scene and identity matrix
-					for (var m = 0; m<mirror_images.length; m++){ //Add image sources for that order to the master array of image sources
-						scene.imsources.push(mirror_images[m]);
-					}
+					sceneGraphTraversal (scene.imsources[s], scene, mat4.create()); //Start off recursion with scene and identity matrix
 				}
 			}
 		}
