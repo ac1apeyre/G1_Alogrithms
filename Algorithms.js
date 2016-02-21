@@ -1,154 +1,152 @@
-//PATH EXTRACTION 
+var sourceImageArray;
 
-//Given a ray described by an initial point P0 and a direction V both in world coordinates, 
-//check to see if it intersects the polygon described by "vertices," an array of vec3
-//values describing the location of the polygon vertices in its child frame.
-//mvMatrix is a matrix describing how to transform "vertices" into world coordinates
-//which you will have to do to get the correct intersection in world coordinates.
-//Be sure to compute the plane normal only after you have transformed the points,
-//and be sure to only compute intersections which are inside of the polygon
-//(you can assume that all polygons are convex and use the area method)
 
 function rayIntersectPolygon(P0, V, vertices, mvMatrix) {
-	//TODO: Fill this in
-	//Step 1: Make a new array of vec3s which holds "vertices" transformed to world 
-	//coordinates (hint: vec3 has a function "transformMat4" which is useful)
-	//Step 2: Compute the plane normal of the plane spanned by the transformed vertices
-	//Step 3: Perform ray intersect plane
-	//Step 4: Check to see if the intersection point is inside of the transformed 
-	//polygon. You can assume that the polygon is convex.  If you use the area test, 
-	//you can allow for some wiggle room in the two areas you're comparing (e.g. 
-	//absolute difference not exceeding 1e-4)
-	//Step 5: Return the intersection point if it exists or null if it's outside
-	//of the polygon or if the ray is perpendicular to the plane normal (no intersection)
-	return {t:1e9, P:vec3.fromValues(0, 0, 0)}; //These are dummy values 
-	//you should return both an intersection point and a parameter t.  The parameter t 
-	//will be used to sort intersections in order of occurrence to figure out which one happened first
+  
+	return {t:1e9, P:vec3.fromValues(0, 0, 0)};
 }
 
 
+
+
 function sceneGraphTraversal(s, node, mvMatrix){ //complete the recursive scene graph traversal
-	for (c in node.children){ //for each child in node.children
-  		if ('mesh' in node){ // check if node is dummy: if not dummy node, it will have a mesh object
-  			var mesh = node.mesh; // access the mesh object
-  			for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
-  				var face = mesh.faces[f]; // pointer to face
-       				if (face == s.genFace) { //if face is the face that generated the source
-          				continue; //Don't reflect with the face (you'll get parent image)
-        			}
-       				var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order
-       				// Note: 'vertices' is an array of vec3 objects; positions are in NODE COORDINATE SYSTEM (NCS)
-       				// Convert vertices from NCS to WCS: 
-       				var nextmvMatrix = mat4.create(); //Allocate transformation matrix
-       				mat4.mul(nextmvMatrix, mvMatrix, c.transform); //Calculate transformation matrix based on hierarchy
-       				var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
-       				for (vertex in vertices){
-          				var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
-          				vec3.transformMat4(wc_vertex, vertex, nextmvMatrix);
-          				wc_vertices.push(wc_vertex);
-        			};
-				//Create the mirror image across each face (plane):
-				var q = vec3.create();// create a point 'q' on the plane
-				q = wc_vertices[0]; //arbitrarily let 'q' be vertex 0
-				var source = vec3.create();
-				source = s.pos; 
-				var vecSQ = vec3.create(); //Create a vector from the source to q 
-				vec3.subtract(vecSQ, q, source); //calculate vecSQ=source-q
-				//calculate plane normal using transformed vertices:
-				var u1 = vec3.create(); //allocate a vector "u1" (vertex 1 to vertex 2)
-        			var u2 = vec3.create(); //allocate a vector "u2" (vertex 1 to vertex 3)
-        			vec3.subtract(u1, wc_vertex[1], wc_vertex[0]); //calculate the vector
-        			vec3.subtract(u2, wc_vertex[2], wc_vertex[0]); //calculate the vector
-        			var norm = vec3.create(); //allocate a vector for the plane normal
-        			vec3.cross(norm, u1, u2); //calculate plane normal using cross product
-        			var p = vec3.create();
-        			p = source - 2*((source-q)*norm)*norm; //The mirror image of s, snew =  s - 2((s-q)*n)*n
-        			var snew = {pos:p, order:(s.order+1), parent:s, genFace:face, rcoeff:s.rcoeff};
-				// add snew to scene.imsources[]
-				scene.imsources.push(snew);
+	if ('children' in node) {
+    
+		for (var c = 0; c < node.children.length; c++) {
+  //for each child in node.children
+			if ('mesh' in node.children[c]){ // check if node is dummy: if not dummy node, it will have a mesh object
+  				var mesh = node.children[c].mesh; // access the mesh object
+  				for (var f = 0; f < mesh.faces.length; f++){ //loop through the array of its faces
+					var face = mesh.faces[f]; // pointer to face
+       					if (face == s.genFace) { //if face is the face that generated the source
+          					continue; //Don't reflect with the face (you'll get parent image)
+        				}
+       					var vertices = face.getVerticesPos(); //get all vertices for a 'face' in CCW order & NCS
+					// Convert vertices from NCS to WCS: 
+       					var nextmvMatrix = mat4.create(); //Allocate transformation matrix
+       					mat4.mul(nextmvMatrix, mvMatrix, node.children[c].transform); //Calculate transformation matrix based on hierarchy
+       					var wc_vertices = []; //Make a new array that will contains vertices (vec3s) in WCS
+       					for (var v=0; v<vertices.length; v++){
+          					var wc_vertex= vec3.create(); //allocate a vector for the transfromed vertex
+          					vec3.transformMat4(wc_vertex, vertices[v], nextmvMatrix);
+          					wc_vertices.push(wc_vertex);
+        				};
+					//Create the mirror image across each face (plane):
+					var q = vec3.create();// create a point 'q' on the plane
+					q = wc_vertices[0]; //arbitrarily let 'q' be vertex 0
+					var source = vec3.create();
+					source = s.pos; 
+					var vecSQ = vec3.create(); //Create a vector from the source to q 
+					vec3.subtract(vecSQ, q, source); //calculate vecSQ=source-q
+					//calculate plane normal using transformed vertices:
+					var u1 = vec3.create(); //allocate a vector "u1" (vertex 1 to vertex 2)
+        				var u2 = vec3.create(); //allocate a vector "u2" (vertex 1 to vertex 3)
+        				vec3.subtract(u1, wc_vertices[1], wc_vertices[0]); //calculate the vector
+        				vec3.subtract(u2, wc_vertices[2], wc_vertices[0]); //calculate the vector
+        				var norm = vec3.create(); //allocate a vector for the plane normal
+        				vec3.cross(norm, u1, u2); //calculate plane normal using cross product
+        				var p = vec3.create();
+					//**ISSUE IS HERE: need to calculate p correctly with vec3 functions >:(
+        				p = source - 2*((source-q)*norm)*norm; //The mirror image of s, snew =  s - 2((s-q)*n)*n
+        				var snew = {pos:p, order:(s.order+1), parent:s, genFace:face, rcoeff:s.rcoeff};
+					sourceImageArray.push(snew); // add snew to scene.imsources[]
+  				}
   			}
-  		}
-  		sceneGraphTraversal(s, c, nextmvMatrix); // recursive call on child
+  			sceneGraphTraversal(s, node.children[c], nextmvMatrix); // recursive call on child
+		}
 	}
 
 }
 
 
 function addImageSourcesFunctions(scene) {
-	//Purpose: A recursive function provided which helps to compute intersections
-	//of rays with all faces in the scene, taking into consideration the scene graph
-	//structure
-
-	//Inputs: P0 (vec3): Ray starting point, V (vec3): ray direction
-	//node (object): node in scene tree to process, 
-	//mvMatrix (mat4): Matrix to put geometry in this node into world coordinates
-	//excludeFace: Pointer to face object to be excluded (don't intersect with
-	//the face that this point lies on)
-	//Returns: null if no intersection,
-	//{tmin:minimum t along ray, PMin(vec3): corresponding point, faceMin:Pointer to mesh face hit first}
     
-	//NOTE: Calling this function with node = scene and an identity matrix for mvMatrix
-	//will start the recursion at the top of the scene tree in world coordinates
-	
-	//PROVIDED 
 	scene.rayIntersectFaces = function(P0, V, node, mvMatrix, excludeFace) {
-		var tmin = Infinity; //The parameter along the ray of the nearest intersection
-		var PMin = null; //The point of intersection corresponding to the nearest interesection
-		var faceMin = null;//The face object corresponding to the nearest intersection
+	
+	var tmin = Infinity;   
+		var PMin = null;  
+		var faceMin = null;
 		if (node === null) {
+            
 			return null;
+        
 		}
-		if ('mesh' in node) { //Make sure it's not just a dummy transformation node
+        
+		if ('mesh' in node) {     
 			var mesh = node.mesh;
+            
 			for (var f = 0; f < mesh.faces.length; f++) {
+                
 				if (mesh.faces[f] == excludeFace) {
-				continue; //Don't re-intersect with the face this point lies on
+                    
+				continue;        
 				}
-				//Intersect the ray with this polygon
+                
+				
 				var res = rayIntersectPolygon(P0, V, mesh.faces[f].getVerticesPos(), mvMatrix);
+                
 				if (!(res === null) && (res.t < tmin)) {
+                    
 					tmin = res.t;
+                    
 					PMin = res.P;
+                    
 					faceMin = mesh.faces[f];
+                
 				}
+            
 			}
+        
 		}
+        
+        
 		if ('children' in node) {
-		//Recursively check the meshes of the children to make sure the ray doesn't intersect any of them first
+                  
 			for (var i = 0; i < node.children.length; i++) {
+                
 				var nextmvMatrix = mat4.create();
-				//Multiply on the right by the next transformation of the child node
+                
 				mat4.mul(nextmvMatrix, mvMatrix, node.children[i].transform);
-				//Recursively intersect with the child node
+                
 				var cres = scene.rayIntersectFaces(P0, V, node.children[i], nextmvMatrix, excludeFace);
+                
 				if (!(cres === null) && (cres.tmin < tmin)) {
+                    
 					tmin = cres.tmin;
+                    
 					PMin = cres.PMin;
+                    
 					faceMin = cres.faceMin;
+                
 				}
+            
 			}
+        
 		}
+        
 		if (PMin === null) {
+            
 			return null;
+        
 		}
+        
 		return {tmin:tmin, PMin:PMin, faceMin:faceMin};
+    
 	}
  
 
-
-	//IMAGE SOURCE GENERATION
-	//Purpose: Fill in the array scene.imsources[] with a bunch of source objects. 
-	//Inputs: order (int) : maximum number of bounces to take
-	//Notes: 
-	//source objects need "pos", "genFace", "rcoeff", "order", & "parent" fields (at least)
-    	//use recursion (reflecting images of images of images (etc.) across polygon faces)
-
+   
+  
 	scene.computeImageSources = function(order) {
-		scene.source.order = 0; //how many bounces a particular image represents
-		scene.source.rcoeff = 1.0; //reflection coefficient of the node that gave rise to this source
-		scene.source.parent = null; //image source's parent
-		scene.source.genFace = null; //mesh face that generated image (don't reflect an image across this face- you'll get parent image
-		scene.imsources = [scene.source];
+        
+		scene.source.order = 0;       
+		scene.source.rcoeff = 1.0;      
+		scene.source.parent = null;    
+		scene.source.genFace = null; 
+		sourceImageArray=[scene.source];
+		scene.imsources = sourceImageArray;
+		
+	
 
 		for (var o = 1; o<=order; o++){
 			for (var s=0; s<scene.imsources.length; s++){ //check all previous image sources in scene.imsources
@@ -159,62 +157,32 @@ function addImageSourcesFunctions(scene) {
 			}
 		}
 
-
-		//FOR DEBUGGING PURPOSES
-		//Display all image sources to the console
-		//# virtual images: N(N-1)^(r-1) where N = number of faces in a scene and r is the order 
+		//DEBUGGING
+		console.log(scene.imsources.length);
+	
 		for (var a = 0; a < scene.imsources.length; a++) {
-    			console.log(scene.imsources[a].pos);
-		}
+    				
+			console.log(scene.imsources[a].pos);
+		
+		}       
+        
 		
 	}    
-	
-
-
-
-
-	//Purpose: Based on the extracted image sources, trace back paths from the
-	//receiver to the source, checking to make sure there are no occlusions
-	//along the way.  Remember, you're always starting by tracing a path from
-	//the receiver to the image, and then from the intersection point with
-	//that image's corresponding face to the image's parent, and so on
-	//all the way until you get back to the original source.
-	//Fill in the array scene.paths, where each element of the array is itself
-	//an array of objects describing vertices along the path, starting
-	//with the receiver and ending with the source.  Each object in each path
-	//array should contain a field "pos" which describes the position, as well
-	//as an element "rcoeff" which stores the reflection coefficient at that
-    
-	//part of the path, which will be used to compute decays in "computeInpulseResponse()"
-    
-	//Don't forget the direct path from source to receiver!
     
     
+
 	scene.extractPaths = function() {
+        
 		scene.paths = [];
         
-		//TODO: Finish this. Extract the rest of the paths by backtracing from
-		//the image sources you calculated.  Return an array of arrays in
-		//scene.paths.  Recursion is highly recommended
-		//Each path should start at the receiver and end at the source
-		//(or vice versa), so scene.receiver should be the first element 
-		//and scene.source should be the last element of every array in 
-		//scene.paths
+        
 	}
-    
-	//Inputs: Fs: Sampling rate (samples per second)
+
+
 	scene.computeImpulseResponse = function(Fs) {
         
-		var SVel = 340;	//Sound travels at 340 meters/second
-		//TODO: Finish this.  Be sure to scale each bounce by 1/(1+r^p), 
-		//where r is the length of the line segment of that bounce in meters
-		//and p is some integer less than 1 (make it smaller if you want the 
-		//paths to attenuate less and to be more echo-y as they propagate)
-		//Also be sure to scale by the reflection coefficient of each material
-		//bounce (you should have stored this in extractPaths() if you followed
-		//those directions).  Use some form of interpolation to spread an impulse
-		//which doesn't fall directly in a bin to nearby bins
-		//Save the result into the array scene.impulseResp[]
+		var SVel = 340;	   
+
 	}
 
 }
